@@ -15,8 +15,8 @@ library(geosphere)
 library(ggplot2)
 
 # Chemin des fichiers
-SSR_data <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.1-parentage_with_demerelate/Input_files/nSSR_Sparouine.csv"
-geo_data <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.1-parentage_with_demerelate/Input_files/geo_inds_SPR.csv"
+SSR_data <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.1-parentage_with_demerelate/Input_files/nSSR_Regina.csv"
+geo_data <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.1-parentage_with_demerelate/Input_files/geo_inds_REG.csv"
 dir_result <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.1-parentage_with_demerelate/results"
 
 # Lire les fichiers CSV
@@ -53,14 +53,14 @@ dist_matrix <- distm(geo_coords[, c("long", "lat")], fun=distHaversine)
 ##################### Apply on each sampling sites ######################
 
 # Créer les paires d'individus par sites
-pairs_SPR <- expand.grid(1:nrow(geo_coords), 1:nrow(geo_coords))
-pairs_SPR <- pairs_SPR[pairs_SPR$Var1 < pairs_SPR$Var2, ]
-pairs_SPR$distance <- dist_matrix[upper.tri(dist_matrix)]
-pairs_SPR$relatedness <- relat_values
-pairs_SPR$category <- categories
+pairs_REG <- expand.grid(1:nrow(geo_coords), 1:nrow(geo_coords))
+pairs_REG <- pairs_REG[pairs_REG$Var1 < pairs_REG$Var2, ]
+pairs_REG$distance <- dist_matrix[upper.tri(dist_matrix)]
+pairs_REG$relatedness <- relat_values
+pairs_REG$category <- categories
 
 # Créer le boxplot horizontal
-ggplot(pairs_SPR, aes(x=category, y=distance)) +
+ggplot(pairs_REG, aes(x=category, y=distance)) +
   geom_boxplot() +
   coord_flip() +
   labs(title="Relatedness Categories by Distance", x="Relatedness Category", y="Distance (meters)")
@@ -69,20 +69,30 @@ ggplot(pairs_SPR, aes(x=category, y=distance)) +
 
 ################### Combine results of 4 sites in one plot ###############
 
-# Ajouter une colonne pour identifier chaque site
-pairs_NOU$site <- "NOU"
-pairs_REG$site <- "REG"
-pairs_PAR$site <- "PAR"
-pairs_SPR$site <- "SPR"
+# Ajouter une colonne pour identifier chaque site avec les noms complets
+pairs_NOU$site <- "Nouragues"
+pairs_REG$site <- "Regina"
+pairs_PAR$site <- "Paracou"
+pairs_SPR$site <- "Sparouine"
+
+str(pairs_NOU)
 
 # Concaténer les quatre jeux de données
 combined_pairs <- rbind(pairs_NOU, pairs_REG, pairs_PAR, pairs_SPR)
+# Créer un facteur avec l'ordre des sites souhaité
+combined_pairs$site <- factor(combined_pairs$site, levels = c("Sparouine", "Paracou", "Nouragues", "Regina"))
+
 
 # Créer le boxplot horizontal avec différenciation des sites
 ggplot(combined_pairs, aes(x=category, y=distance, fill=site)) +
   geom_boxplot() +
   coord_flip() +
   labs(title="", x="Family relationship", y="Distance (meters)") +
+  scale_fill_manual(values = c("Sparouine" = "#EE0000", 
+                               "Paracou" = "darkgoldenrod2", 
+                               "Nouragues" = "springgreen3", 
+                               "Regina" = "#4682B4")) +
   theme(legend.title = element_blank())
+
 
 
