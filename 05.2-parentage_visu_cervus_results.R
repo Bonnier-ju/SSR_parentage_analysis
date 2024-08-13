@@ -55,7 +55,7 @@ ggplot() +
                                  xend = long_parent, yend = lat_parent, color = confidence), size = 0.5, show.legend = FALSE) +
   scale_color_manual(values = c("*" = "red")) +
   theme_minimal() +
-  labs(title = "Links between offsping and parents",
+  labs(title = "Links between offsprings and parents",
        x = "Longitude", y = "Latitude")
 
 
