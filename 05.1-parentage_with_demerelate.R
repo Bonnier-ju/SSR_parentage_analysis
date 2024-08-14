@@ -15,9 +15,10 @@ library(geosphere)
 library(ggplot2)
 
 # Chemin des fichiers
-SSR_data <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.1-parentage_with_demerelate/Input_files/nSSR_Regina.csv"
-geo_data <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.1-parentage_with_demerelate/Input_files/geo_inds_REG.csv"
+SSR_data <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.1-parentage_with_demerelate/Input_files/nSSR_Sparouine.csv"
+geo_data <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.1-parentage_with_demerelate/Input_files/geo_inds_SPR.csv"
 dir_result <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.1-parentage_with_demerelate/results"
+
 
 # Lire les fichiers CSV
 SSR_table <- read.csv(SSR_data, header = TRUE)
@@ -53,18 +54,31 @@ dist_matrix <- distm(geo_coords[, c("long", "lat")], fun=distHaversine)
 ##################### Apply on each sampling sites ######################
 
 # Créer les paires d'individus par sites
-pairs_REG <- expand.grid(1:nrow(geo_coords), 1:nrow(geo_coords))
-pairs_REG <- pairs_REG[pairs_REG$Var1 < pairs_REG$Var2, ]
-pairs_REG$distance <- dist_matrix[upper.tri(dist_matrix)]
-pairs_REG$relatedness <- relat_values
-pairs_REG$category <- categories
+pairs_SPR <- expand.grid(1:nrow(geo_coords), 1:nrow(geo_coords))
+pairs_SPR <- pairs_SPR[pairs_SPR$Var1 < pairs_SPR$Var2, ]
+pairs_SPR$distance <- dist_matrix[upper.tri(dist_matrix)]
+pairs_SPR$relatedness <- relat_values
+pairs_SPR$category <- categories
 
 # Créer le boxplot horizontal
-ggplot(pairs_REG, aes(x=category, y=distance)) +
+ggplot(pairs_SPR, aes(x=category, y=distance)) +
   geom_boxplot() +
   coord_flip() +
   labs(title="Relatedness Categories by Distance", x="Relatedness Category", y="Distance (meters)")
 
+########################## Table of parentage in function of distances class ##################
+
+# Définir les classes de distance en mètres
+distance_classes <- cut(pairs_SPR$distance, 
+                        breaks = c(0, 30, 60, 90, 130, 170, 220, 300, 600), 
+                        labels = c("0-30", "30-60", "60-90", "90-130", "130-170", "170-220", "220-300", "300-600"))
+
+# Ajouter la colonne des classes de distance au dataframe
+pairs_SPR$distance_class <- distance_classes
+
+# Créer un tableau croisé des catégories de parenté par classe de distance
+relatedness_by_distance <- table(pairs_SPR$category, pairs_SPR$distance_class)
+print(relatedness_by_distance)
 
 
 ################### Combine results of 4 sites in one plot ###############
