@@ -175,3 +175,134 @@ print(paste("Mean Distance to Fathers:", round(mean_distance_father, 2), "meters
 # Optionally, save the dataset for further analysis
 # write.csv(filtered_data, "Filtered_Parentage_With_Distances.csv", row.names = FALSE)
 
+
+
+
+########### Plotting results on a map ##########
+################################################
+
+
+library(ggplot2)
+library(ggrepel)
+library(tidyr)
+
+# Prepare the dataset using pivot_longer()
+map_data <- filtered_data %>%
+  select(OffspringID, Latitude_Offspring, Longitude_Offspring, 
+         Mother_ID, Latitude_Mother, Longitude_Mother,
+         Father_ID, Latitude_Father, Longitude_Father) %>%
+  pivot_longer(cols = c(Latitude_Mother, Longitude_Mother, Latitude_Father, Longitude_Father),
+               names_to = c(".value", "Parent_Type"),
+               names_pattern = "(Latitude|Longitude)_(.*)") %>%
+  mutate(Parent_ID = ifelse(Parent_Type == "Father", Father_ID, Mother_ID),
+         Link_Type = ifelse(Parent_Type == "Mother", "Mother-Offspring", "Father-Offspring"))
+
+# Create the map
+ggplot() +
+  # Plot parent-offspring connections
+  geom_segment(data = map_data, aes(x = Longitude_Offspring, y = Latitude_Offspring, 
+                                    xend = Longitude, yend = Latitude, 
+                                    color = Link_Type), size = 1, alpha = 0.7) +
+  
+  # Plot offspring points (Green Circles)
+  geom_point(data = filtered_data, aes(x = Longitude_Offspring, y = Latitude_Offspring), 
+             color = "green", size = 3, shape = 16, alpha = 0.8) +  # Shape 16 = Circle
+  
+  # Plot parent points (Blue Triangles)
+  geom_point(data = filtered_data, aes(x = Longitude_Mother, y = Latitude_Mother), 
+             color = "blue", size = 3, shape = 17, alpha = 0.8) +  # Shape 17 = Triangle
+  geom_point(data = filtered_data, aes(x = Longitude_Father, y = Latitude_Father), 
+             color = "blue", size = 3, shape = 17, alpha = 0.8) +  # Shape 17 = Triangle
+  
+  # Customize legend and theme
+  scale_color_manual(values = c("Mother-Offspring" = "red", "Father-Offspring" = "blue")) +
+  labs(title = "Parentage Map of Offspring, Mothers, and Fathers",
+       x = "Longitude", y = "Latitude", color = "Link Type") +
+  theme_minimal()
+
+
+
+
+########### Map of results with isolignes ############
+######################################################
+
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(sf)  # For handling spatial data
+library(ggrepel)  # To avoid overlapping labels
+
+# Load the isoline shapefile
+file_path_isolines <- "C:/Users/bonni/Desktop/Fichiers_cartes_Qgis/Isolignes/Isolignes_Sparouine_5m/SPA_isolignes_lidar_5m.shp"
+isolines <- st_read(file_path_isolines)
+
+# Transform the isolines to WGS84 (EPSG:4326) to match the offspring-parent data
+isolines_wgs84 <- st_transform(isolines, crs = 4326)
+
+# Convert offspring-parent data into sf object (assuming it's already in WGS84)
+filtered_data_sf <- st_as_sf(filtered_data, coords = c("Longitude_Offspring", "Latitude_Offspring"), crs = 4326)
+
+# Compute bounding box for the study area
+bbox_coords <- st_bbox(filtered_data_sf)
+
+# Expand the bounding box slightly to include nearby isolines
+xmin <- bbox_coords$xmin - 0.001
+ymin <- bbox_coords$ymin - 0.001
+xmax <- bbox_coords$xmax + 0.001
+ymax <- bbox_coords$ymax + 0.001
+
+# Prepare the dataset for visualization
+map_data <- filtered_data %>%
+  select(OffspringID, Latitude_Offspring, Longitude_Offspring, 
+         Mother_ID, Latitude_Mother, Longitude_Mother,
+         Father_ID, Latitude_Father, Longitude_Father) %>%
+  pivot_longer(cols = c(Latitude_Mother, Longitude_Mother, Latitude_Father, Longitude_Father),
+               names_to = c(".value", "Parent_Type"),
+               names_pattern = "(Latitude|Longitude)_(.*)") %>%
+  mutate(Parent_ID = ifelse(Parent_Type == "Father", Father_ID, Mother_ID),
+         Link_Type = ifelse(Parent_Type == "Mother", "Mother-Offspring", "Father-Offspring"))
+
+# Create the final map
+ggplot() +
+  # Add isolines
+  geom_sf(data = isolines_wgs84, color = "gray50", size = 0.3, alpha = 0.7) +
+  
+  # Plot parent-offspring connections
+  geom_segment(data = map_data, aes(x = Longitude_Offspring, y = Latitude_Offspring, 
+                                    xend = Longitude, yend = Latitude, 
+                                    color = Link_Type), size = 1, alpha = 0.7) +
+  
+  # Plot offspring points (Green Circles)
+  geom_point(data = filtered_data, aes(x = Longitude_Offspring, y = Latitude_Offspring), 
+             color = "green", size = 3, shape = 16, alpha = 0.8) +  # Shape 16 = Circle
+  
+  # Plot parent points (Blue Triangles)
+  geom_point(data = filtered_data, aes(x = Longitude_Mother, y = Latitude_Mother), 
+             color = "blue", size = 3, shape = 17, alpha = 0.8) +  # Shape 17 = Triangle
+  geom_point(data = filtered_data, aes(x = Longitude_Father, y = Latitude_Father), 
+             color = "blue", size = 3, shape = 17, alpha = 0.8) +  # Shape 17 = Triangle
+  
+  # Customize legend and theme
+  scale_color_manual(values = c("Mother-Offspring" = "red", "Father-Offspring" = "blue")) +
+  labs(title = "Parentage Map with Isolines",
+       x = "Longitude", y = "Latitude", color = "Link Type") +
+  theme_minimal() +
+  
+  # Set the zoom limits based on the bounding box
+  coord_sf(
+    xlim = c(xmin, xmax),
+    ylim = c(ymin, ymax),
+    expand = FALSE
+  )
+
+
+
+
+
+
+
+
+
+
+
