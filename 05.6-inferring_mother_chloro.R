@@ -11,7 +11,7 @@ library(utils)
 library(geosphere)
 
 # Load and prepare Cervus data
-file_path_cervus <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.2-parentage_with_cervus/5.2.2 Analyses V2/Sparouine/summary_Sparouine.csv"
+file_path_cervus <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.2-parentage_with_cervus/5.2.2 Analyses V2/Paracou/summary_Paracou.csv"
 data_cervus <- read_csv2(file_path_cervus)  # Assuming ';' as delimiter
 data_cervus <- data_cervus %>%
   filter(grepl("\\+|\\*", Pair_confidence1) | grepl("\\+|\\*", Pair_confidence2)) %>%
@@ -19,7 +19,7 @@ data_cervus <- data_cervus %>%
   select(OffspringID, Parent1_Cervus = First_candidate_ID, Parent2_Cervus = Second_candidate_ID)
 
 # Load and prepare Colony data
-file_path_colony <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.4-parentage_with_colony/Sparouine/Results_Sparouine/test_on_Sparouine.BestConfig.csv"
+file_path_colony <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.4-parentage_with_colony/Paracou/Results_Paracou/Paracou_Colony.BestConfig.csv"
 data_colony <- read_csv2(file_path_colony) %>%
   filter(!(str_starts(FatherID, "#") & str_starts(MotherID, "#"))) %>%  # Exclude only if both parents are supposed
   select(OffspringID, Parent1_Colony = FatherID, Parent2_Colony = MotherID)
@@ -35,7 +35,12 @@ comparison_data %>%
             Concordance_Parent2 = sum(Parent2_Match, na.rm = TRUE),
             Total = n())
 
-# Print the comparison data
+
+# Remove rows where both Parent1_Colony and Parent2_Colony are NA
+comparison_data <- comparison_data %>%
+  filter(!(is.na(Parent1_Colony) & is.na(Parent2_Colony)))
+
+# Print the cleaned comparison data
 print(comparison_data)
 
 
@@ -115,6 +120,10 @@ comparison_data <- comparison_data %>%
 # Print the cleaned and structured data
 print(comparison_data)
 
+#Save csv file
+output_file_path <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/comparison_data_PAR.csv"
+write.csv(comparison_data, file = output_file_path, row.names = FALSE)
+
 
 # Create a new dataset where exactly one parent matches the offspring's haplotype
 filtered_data <- comparison_data %>%
@@ -130,9 +139,6 @@ filtered_data <- comparison_data %>%
 
 # Print the filtered dataset with maternal and paternal assignments
 print(filtered_data)
-
-
-
 
 
 
@@ -172,8 +178,11 @@ mean_distance_father <- mean(filtered_data$Distance_To_Father, na.rm = TRUE)
 print(paste("Mean Distance to Mothers:", round(mean_distance_mother, 2), "meters"))
 print(paste("Mean Distance to Fathers:", round(mean_distance_father, 2), "meters"))
 
-# Optionally, save the dataset for further analysis
-# write.csv(filtered_data, "Filtered_Parentage_With_Distances.csv", row.names = FALSE)
+# Define the file path for saving filtered data
+output_filtered_path <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/filtered_data_PAR.csv"
+write.csv(filtered_data, file = output_filtered_path, row.names = FALSE)
+
+
 
 
 
@@ -230,23 +239,23 @@ ggplot() +
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-library(sf)  # For handling spatial data
-library(ggrepel)  # To avoid overlapping labels
+library(sf)
+library(ggrepel)
 
 # Load the isoline shapefile
-file_path_isolines <- "C:/Users/bonni/Desktop/Fichiers_cartes_Qgis/Isolignes/Isolignes_Sparouine_5m/SPA_isolignes_lidar_5m.shp"
+file_path_isolines <- "C:/Users/bonni/Desktop/Fichiers_cartes_Qgis/Isolignes/Isolignes_Paracou_5m/Isolignes_Paracou_5m.shp"
 isolines <- st_read(file_path_isolines)
 
 # Transform the isolines to WGS84 (EPSG:4326) to match the offspring-parent data
 isolines_wgs84 <- st_transform(isolines, crs = 4326)
 
-# Convert offspring-parent data into sf object (assuming it's already in WGS84)
+# Convert offspring-parent data into sf object
 filtered_data_sf <- st_as_sf(filtered_data, coords = c("Longitude_Offspring", "Latitude_Offspring"), crs = 4326)
 
 # Compute bounding box for the study area
 bbox_coords <- st_bbox(filtered_data_sf)
 
-# Expand the bounding box slightly to include nearby isolines
+# Expand bounding box slightly
 xmin <- bbox_coords$xmin - 0.001
 ymin <- bbox_coords$ymin - 0.001
 xmax <- bbox_coords$xmax + 0.001
@@ -263,7 +272,9 @@ map_data <- filtered_data %>%
   mutate(Parent_ID = ifelse(Parent_Type == "Father", Father_ID, Mother_ID),
          Link_Type = ifelse(Parent_Type == "Mother", "Mother-Offspring", "Father-Offspring"))
 
-# Create the final map
+# Create the final map with legend inside the plot
+# 1000X800
+
 ggplot() +
   # Add isolines
   geom_sf(data = isolines_wgs84, color = "gray50", size = 0.3, alpha = 0.7) +
@@ -274,30 +285,34 @@ ggplot() +
                                     color = Link_Type), size = 1, alpha = 0.7) +
   
   # Plot offspring points (Green Circles)
-  geom_point(data = filtered_data, aes(x = Longitude_Offspring, y = Latitude_Offspring), 
-             color = "green", size = 3, shape = 16, alpha = 0.8) +  # Shape 16 = Circle
+  geom_point(data = filtered_data, aes(x = Longitude_Offspring, y = Latitude_Offspring, shape = "Offspring"), 
+             color = "green", size = 3, alpha = 0.8) +  # Shape 16 = Circle
   
   # Plot parent points (Blue Triangles)
-  geom_point(data = filtered_data, aes(x = Longitude_Mother, y = Latitude_Mother), 
-             color = "blue", size = 3, shape = 17, alpha = 0.8) +  # Shape 17 = Triangle
-  geom_point(data = filtered_data, aes(x = Longitude_Father, y = Latitude_Father), 
-             color = "blue", size = 3, shape = 17, alpha = 0.8) +  # Shape 17 = Triangle
+  geom_point(data = filtered_data, aes(x = Longitude_Mother, y = Latitude_Mother, shape = "Parent"), 
+             color = "blue", size = 3, alpha = 0.8) +  # Shape 17 = Triangle
+  geom_point(data = filtered_data, aes(x = Longitude_Father, y = Latitude_Father, shape = "Parent"), 
+             color = "blue", size = 3, alpha = 0.8) +  # Shape 17 = Triangle
   
-  # Customize legend and theme
-  scale_color_manual(values = c("Mother-Offspring" = "red", "Father-Offspring" = "blue")) +
-  labs(title = "Parentage Map with Isolines",
-       x = "Longitude", y = "Latitude", color = "Link Type") +
+  # Customize legend (inside the plot)
+  scale_color_manual(values = c("Mother-Offspring" = "red", "Father-Offspring" = "blue"), name = "Parent-Offspring Link") +
+  scale_shape_manual(values = c("Offspring" = 16, "Parent" = 17), name = "Individuals") +
+  
+  # Position the legend inside the plot
   theme_minimal() +
+  theme(legend.position = c(0.85, 0.15),  # Bottom right inside the plot
+        legend.background = element_rect(fill = "white", color = "black", size = 0.5),
+        legend.key = element_rect(fill = "white")) +
   
-  # Set the zoom limits based on the bounding box
+  labs(title = "Seed and Pollen dispersal in Paracou",
+       x = "Longitude", y = "Latitude") +
+  
+  # Set zoom limits
   coord_sf(
     xlim = c(xmin, xmax),
     ylim = c(ymin, ymax),
     expand = FALSE
   )
-
-
-
 
 
 
