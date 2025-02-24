@@ -33,9 +33,25 @@ genind_obj@pop
 
 ################# Plotting of the curves ##############
 #######################################################
+library(poppr)
+library(ggplot2)
 
+# Generate the genotype accumulation curve for all individuals
+geno_curve_all <- genotype_curve(genind_obj, sample = 1000, quiet = FALSE)
 
+# Generate and plot genotype accumulation curves for each population
+populations <- c("Regina", "Nouragues", "Paracou", "Sparouine")
 
+# Loop through each population
+for (pop in populations) {
+  # Subset the genind object by population
+  genind_sub <- genind_obj[pop(genind_obj) == pop]
+  
+  # Generate genotype accumulation curve
+  geno_curve_pop <- genotype_curve(genind_sub, sample = 1000, quiet = FALSE)
+}
+
+# plot 1200x600
 
 
 
