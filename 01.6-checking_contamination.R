@@ -2,73 +2,74 @@
 #################### Checking contamination on SSR ################
 ###################################################################
 
-# Load required packages
-library(adegenet)
 library(dplyr)
 library(tidyr)
-library(poppr)
 library(ggplot2)
+library(adegenet)
+library(pegas)
 
-################## Pre-processing of CSV file ######################
-####################################################################
 
-# Read the CSV file (Replace with the actual path)
-file_path <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Data_initial/4sites/nSSR_4sites.csv"
-data <- read.csv2(file_path, stringsAsFactors = FALSE)
+#Load data 
 
-# Remove non-genetic columns (ID, Pop, lat, long)
-geno_data <- data %>% select(-Id, -Pop, -lat, -long)
+data <- read.csv("C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Data_initial/Sparouine/Sparouine_full_data.csv", sep=",", header=TRUE)
 
-# Replace '0' with NA
-geno_data[geno_data == "0"] <- NA
 
-# Transform concatenated alleles into "X/Y" format
-geno_data <- geno_data %>%
-  mutate(across(everything(), ~ ifelse(is.na(.), NA, gsub("(.{3})(.{3})", "\\1/\\2", .))))
+################### Checking heterozygosity excess #################
 
-# Add metadata back
-geno_data <- cbind(data %>% select(Id, Pop), geno_data)
+# Select only the SSR marker columns
+markers <- data %>% select(starts_with("SSRSeq"))
+# Identify loci pairs corresponding to allele 1 and allele 2
+loci_pairs <- seq(1, ncol(markers), by=2)
 
-# Convert to `genind` format
-genind_obj <- df2genind(geno_data[, -c(1,2)], sep = "/", pop = geno_data$Pop, ind.names = geno_data$Id, ploidy = 2)
 
-# Check genind object
-print(genind_obj)
-print(genind_obj@pop)
+# Function to calculate individual heterozygosity
+heterozygosity <- function(row) {
+  het_count <- 0
+  total_loci <- 0
+  
+  for (i in loci_pairs) {
+    allele1 <- row[i]
+    allele2 <- row[i+1]
+    
+    # Check if data is available
+    if (!is.na(allele1) & !is.na(allele2)) {
+      total_loci <- total_loci + 1
+      if (allele1 != allele2) {
+        het_count <- het_count + 1
+      }
+    }
+  }
+  
+  if (total_loci > 0) {
+    return(het_count / total_loci)  # Proportion of heterozygosity
+  } else {
+    return(NA)  # Return NA if no valid loci
+  }
+}
 
-################## Contamination Detection ######################
-#################################################################
+# Apply the function to each individual
+data$Heterozygosity <- apply(markers, 1, heterozygosity)
 
-# Compute pairwise genetic distances
-dist_matrix <- dist(genind_obj, method = "euclidean")  # Alternative: "Rogers", "Nei"
+# Visualization of heterozygosity distribution
+#800x600
 
-# Convert distance matrix to a data frame
-dist_df <- as.data.frame(as.table(as.matrix(dist_matrix)))
-colnames(dist_df) <- c("Ind1", "Ind2", "GeneticDistance")
-
-# Remove self-comparisons (distance = 0)
-dist_df <- dist_df[dist_df$Ind1 != dist_df$Ind2, ]
-
-# Define a contamination threshold (e.g., bottom 1% of genetic distances)
-threshold <- quantile(dist_df$GeneticDistance, 0.01)  
-
-# Identify potential contamination cases
-contaminated_pairs <- dist_df %>% filter(GeneticDistance < threshold)
-
-# Print possible contamination cases
-print(contaminated_pairs)
-
-# Save contamination results
-write.csv(contaminated_pairs, "contaminated_pairs.csv", row.names = FALSE)
-
-################## Visualization ######################
-#######################################################
-
-# Plot the distribution of pairwise genetic distances
-ggplot(dist_df, aes(x = GeneticDistance)) +
-  geom_histogram(binwidth = 0.02, fill = "blue", alpha = 0.7) +
-  geom_vline(xintercept = threshold, color = "red", linetype = "dashed") +
-  labs(title = "Distribution of Pairwise Genetic Distances",
-       x = "Genetic Distance",
-       y = "Frequency") +
+ggplot(data, aes(x = Heterozygosity)) +
+  geom_histogram(binwidth = 0.05, fill = "aquamarine3", alpha = 0.5, color = "black") +
+  geom_vline(aes(xintercept = mean(Heterozygosity, na.rm = TRUE) + 2 * sd(Heterozygosity, na.rm = TRUE)),
+             color = "red", linetype = "dashed") +
+  ggtitle("Distribution of Individual Heterozygosity - Sparouine") +
+  xlab("Heterozygosity Rate") + ylab("Number of Individuals") +
   theme_minimal()
+
+# Compute the heterozygosity threshold as the mean + 2 standard deviations
+threshold <- mean(data$Heterozygosity, na.rm = TRUE) + 2 * sd(data$Heterozygosity, na.rm = TRUE)
+# Select individuals with heterozygosity greater than the threshold
+outliers <- data %>% filter(Heterozygosity > threshold)
+
+# Save the list of suspect individuals to a CSV file
+write.csv(outliers, "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/01-Pre-traitements/01.6-checking_contamination/suspect_individuals_heterozygosity_SPR.csv", row.names = FALSE)
+
+
+
+
+
