@@ -14,7 +14,7 @@ library(dplyr)
 library(pegas)
 
 #Load dataset
-data <- read.csv("C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Data_initial/Sparouine/Sparouine_full_data.csv", sep=";", header=TRUE)
+data <- read.csv("C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Data_initial/Nouragues/Nouragues_full_data.csv", sep=";", header=TRUE)
 
 indiv_ids <- data$ID
 markers <- data %>% select(starts_with("SSRSeq"))
@@ -35,14 +35,15 @@ freq_RR(markers)
 # Evaluate the reliability and informativeness of the loci (markers)
 # Perform a resampling procedure to measure how diversity indices (e.g., heterozygosity, number of multilocus genotypes) 
 # change as the number of sampled loci increases.
-# also present results with a genotype accumulation curves
-res <- sample_loci(markers, nbrepeat = 10, He = TRUE, graph = TRUE, bar = TRUE)
+# also present results with a genotype accumulation curves 
+# plot : 800x600
+res <- sample_loci(markers, nbrepeat = 100, He = TRUE, graph = TRUE, bar = TRUE)
 
 res$res_MLG
 
 res$res_alleles
 
-sample_units(markers, nbrepeat = 10)
+sample_units(markers, nbrepeat = 100)
 
 ################## Determination of MLL (MultiLocus Lineages) ##################
 # Multilocus Lineage, which refers to groups of individuals sharing very similar multilocus genotypes, 
@@ -54,9 +55,8 @@ pgen(markers)
 # the probability that a given genotype appears more than once purely by sexual reproduction (without clonal reproduction)
 # helps to determine if the repeated occurrence of a genotype indicates: Clonal reproduction, Sample contamination, Sampling errors
 # Very low psex values mean the repeated occurrence of a genotype is unlikely by chance alone, suggesting clonal reproduction or contamination
-psex(markers)
 
-res <- psex(markers, RR = TRUE, nbrepeat = 10)
+res <- psex(markers, RR = TRUE, nbrepeat = 100)
 
 
 
@@ -70,17 +70,17 @@ res <- psex(markers, RR = TRUE, nbrepeat = 10)
 respop <- genet_dist(markers)
 
 #  theoretical distribution of genetic distances based on simulations
-ressim <- genet_dist_sim(markers, nbrepeat = 10) #theoretical distribution
+ressim <- genet_dist_sim(markers, nbrepeat = 100) #theoretical distribution
 
 # simulated theoretical distribution but explicitly excluding self-fertilization
-ressimWS <- genet_dist_sim(markers, genet = TRUE, nbrepeat = 10) #idem, without selfing
+ressimWS <- genet_dist_sim(markers, genet = TRUE, nbrepeat = 100) #idem, without selfing
 
 #graph prep.:
-p1 <- hist(respop$distance_matrix, freq = FALSE, col = rgb(0,0.4,1,1), main = "Sparouine",
+p1 <- hist(respop$distance_matrix, freq = FALSE, col = rgb(0,0.4,1,1), main = "Nouragues",
            xlab = "Genetic distances", breaks = seq(0, max(respop$distance_matrix)+1, 1))
 
 
-p2 <- hist(ressim$distance_matrix, freq = FALSE, col = rgb(0.7,0.9,1,0.5), main = "Sparouine",
+p2 <- hist(ressim$distance_matrix, freq = FALSE, col = rgb(0.7,0.9,1,0.5), main = "Nouragues",
            xlab = "Genetic distances", breaks = seq(0, max(ressim$distance_matrix)+1, 1))
 
 
@@ -93,8 +93,8 @@ p3 <- hist(ressimWS$distance_matrix, freq = FALSE, col = rgb(0.9,0.5,1,0.3),
 limx <- max(max(respop$distance_matrix), max(ressim$distance_matrix), max(ressimWS$distance_matrix))
 
 # Tracer les histogrammes avec ylim étendu jusqu'à 0.1
-hist(respop$distance_matrix, freq = FALSE, col = "aquamarine3",
-     main = "Genetic distance distributions - Sparouine",
+hist(respop$distance_matrix, freq = FALSE, col = "#548B54",
+     main = "Genetic distance distributions - Nouragues",
      xlab = "Genetic distances",
      breaks = seq(0, limx+1, 1), 
      xlim = c(0, 100),
@@ -109,10 +109,10 @@ hist(ressimWS$distance_matrix, freq = FALSE, add = TRUE,
 # Placer manuellement la légende avec des coordonnées pour éviter la superposition :
 legend(x = limx*0.1, y = 0.20,  # Ajuste précisément ces valeurs en fonction du graphique
        legend = c("Observed data", "Simulated data", "Simulated (no selfing)"),
-       fill = c("aquamarine3", rgb(0.7, 0.9, 1, 0.5), rgb(0.9, 0.5, 1, 0.3)),
+       fill = c("#548B54", rgb(0.7, 0.9, 1, 0.5), rgb(0.9, 0.5, 1, 0.3)),
        bg = "white", box.lwd = 1, cex = 0.8)
 
-
+# plot 700x600
 # frequency table displaying the number of pairs of individuals in your dataset that share a 
 # specific genetic distance (number of allelic differences)
 # The first row lists observed genetic distances (number of allele differences).
@@ -121,9 +121,7 @@ table(respop$distance_matrix)
 
 # identify MLLs (Multilocus Lineages)
 # alpha2 = 4 indicates that individuals with ≤ 4 allelic differences are grouped into the same MLL 
-MLLlist <- MLL_generator(markers, alpha2 = 5)
-
-
+MLLlist <- MLL_generator(markers, alpha2 = 18)
 
 ###################### Genotypic diversity, richness and evenness indices calculation ################
 
@@ -152,35 +150,37 @@ Pareto_index(markers, listMLL = MLLlist)
 Pareto_index(markers, full = TRUE, graph = TRUE, legends = 2)
 
 
-############################ Spatial autocorrelation ###############################
-## Computing time is very very long more than 24h ... aborted 
+#################### Saving suspect individuals ###################################
 
+# Generate MLLs using alpha2 = 5
+MLLlist <- MLL_generator(markers, alpha2 = 18)
 
+# Create an empty vector to store MLL assignments
+MLL_vector <- rep(NA, length(indiv_ids))
 
-file_path <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Data_initial/Sparouine/geo_inds_SPR_X_Y_projected.csv"
-coord_markers <- read.csv(file_path, header = T, sep = ";")
+# Properly fill MLL assignments based on MLLlist
+for(i in seq_along(MLLlist)){
+  individuals_in_MLL <- MLLlist[[i]]
+  MLL_vector[individuals_in_MLL] <- i
+}
 
-autocorrelation(markers, coords = coord_markers, Loiselle = TRUE, listMLL = MLLlist)
+# Check the correct assignment
+MLL_df <- data.frame(ID = indiv_ids, MLL = MLL_vector)
+head(MLL_df)
 
+# Clearly identify MLL groups with multiple individuals (potential contamination)
+library(dplyr)
+suspected_MLLs <- MLL_df %>%
+  group_by(MLL) %>%
+  filter(n() > 1) %>% 
+  arrange(MLL)
 
-#distance classes construction:
-autocorrelation(markers, coords = coord_markers, Loiselle = TRUE)
-#10 equidistant classes
-distvec <- c(0,10,15,20,30,50,70,76.0411074)
-#with 0, min distance and 76.0411074, max distance
-autocorrelation(posidonia, coords = coord_posidonia, Loiselle = TRUE,
-                vecdist = distvec) #custom distance vector
-autocorrelation(posidonia, coords = coord_posidonia, Loiselle = TRUE,
-                class1 = TRUE, d = 7) #7 equidistant classes
-autocorrelation(posidonia, coords = coord_posidonia, Loiselle = TRUE,
-                class2 = TRUE, d = 7)
-#7 distance classes with the same number of units in each
+# View explicitly which individuals share MLL (potential contamination)
+print(suspected_MLLs)
 
-
-
-
-
-
-
+# Export to CSV clearly
+write.csv(suspected_MLLs, 
+          "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/01-Pre-traitements/01.7-checking_contamination_Rclone/suspected_contaminations_Nouragues.csv", 
+          row.names = FALSE)
 
 
