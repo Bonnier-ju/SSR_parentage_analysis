@@ -11,15 +11,15 @@ library(utils)
 library(geosphere)
 
 # Load and prepare Cervus data
-file_path_cervus <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.2-parentage_with_cervus/5.2.2 Analyses V2/Paracou/summary_Paracou.csv"
+file_path_cervus <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.2-parentage_with_cervus/5.2.2 Analyses V2/Regina/summary_Regina.csv"
 data_cervus <- read_csv2(file_path_cervus)  # Assuming ';' as delimiter
 data_cervus <- data_cervus %>%
-  filter(grepl("\\+|\\*", Pair_confidence1) | grepl("\\+|\\*", Pair_confidence2)) %>%
+  filter(grepl("/\+|\\*", Pair_confidence1) | grepl("\\+|\\*", Pair_confidence2)) %>%
   rename(OffspringID = Offspring_ID) %>%  # Rename to match Colony data
   select(OffspringID, Parent1_Cervus = First_candidate_ID, Parent2_Cervus = Second_candidate_ID)
 
 # Load and prepare Colony data
-file_path_colony <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.4-parentage_with_colony/Paracou/Results_Paracou/Paracou_Colony.BestConfig.csv"
+file_path_colony <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.4-parentage_with_colony/Regina/Results_Regina/Regina_Colony.BestConfig.csv"
 data_colony <- read_csv2(file_path_colony) %>%
   filter(!(str_starts(FatherID, "#") & str_starts(MotherID, "#"))) %>%  # Exclude only if both parents are supposed
   select(OffspringID, Parent1_Colony = FatherID, Parent2_Colony = MotherID)
@@ -121,7 +121,7 @@ comparison_data <- comparison_data %>%
 print(comparison_data)
 
 #Save csv file
-output_file_path <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/comparison_data_PAR.csv"
+output_file_path <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/comparison_data_REG.csv"
 write.csv(comparison_data, file = output_file_path, row.names = FALSE)
 
 
@@ -179,7 +179,7 @@ print(paste("Mean Distance to Mothers:", round(mean_distance_mother, 2), "meters
 print(paste("Mean Distance to Fathers:", round(mean_distance_father, 2), "meters"))
 
 # Define the file path for saving filtered data
-output_filtered_path <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/filtered_data_PAR.csv"
+output_filtered_path <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/filtered_data_REG.csv"
 write.csv(filtered_data, file = output_filtered_path, row.names = FALSE)
 
 
@@ -243,7 +243,7 @@ library(sf)
 library(ggrepel)
 
 # Load the isoline shapefile
-file_path_isolines <- "C:/Users/bonni/Desktop/Fichiers_cartes_Qgis/Isolignes/Isolignes_Paracou_5m/Isolignes_Paracou_5m.shp"
+file_path_isolines <- "C:/Users/bonni/Desktop/Fichiers_cartes_Qgis/Isolignes/Isolignes_Regina_5m/SUb_sample_isoligne_regina.shp"
 isolines <- st_read(file_path_isolines)
 
 # Transform the isolines to WGS84 (EPSG:4326) to match the offspring-parent data
@@ -304,7 +304,7 @@ ggplot() +
         legend.background = element_rect(fill = "white", color = "black", size = 0.5),
         legend.key = element_rect(fill = "white")) +
   
-  labs(title = "Seed and Pollen dispersal in Paracou",
+  labs(title = "Seed and Pollen dispersal in Regina",
        x = "Longitude", y = "Latitude") +
   
   # Set zoom limits
@@ -315,9 +315,131 @@ ggplot() +
   )
 
 
+###################### New visualisation of the results #######################
+###############################################################################
+
+library(ggplot2)
+library(dplyr)
+library(readr)
+
+
+# Loading files
+  filtered_data <- read.csv("C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/filtered_data_REG.csv", sep=";")  
+
+
+########################### Pollen dispersal bar chart #########################
+  
+# Create 10-meter bins for Distance_To_Father
+filtered_data <- filtered_data %>%
+  mutate(Pollen_Distance_Bin = floor(Distance_To_Father / 10) * 10)
+
+# Summarize the number of events per bin
+pollen_summary <- filtered_data %>%
+  group_by(Pollen_Distance_Bin) %>%
+  summarise(Events = n())
+
+# plot 800x500
+ggplot(pollen_summary, aes(x = Pollen_Distance_Bin, y = Events)) +
+  geom_bar(stat = "identity", fill = "mediumorchid4", color = "black") +
+  scale_x_continuous(breaks = seq(0, 500, by = 50), limits = c(0, 500)) +
+  scale_y_continuous(breaks = seq(0, 8, by = 2), limits = c(0, 8)) +
+  theme_minimal() +
+  labs(title = "Pollen Dispersal Distance Distribution - Regina",
+       x = "Pollen Dispersal Distance (m)",
+       y = "Number of Events") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+########################### Seed dispersal bar chart #########################
+
+
+# Create 10-meter bins for Distance_To_Mother (seed dispersal)
+filtered_data <- filtered_data %>%
+  mutate(Seed_Distance_Bin = floor(Distance_To_Mother / 10) * 10)
+
+# Summarize the number of events per bin
+seed_summary <- filtered_data %>%
+  group_by(Seed_Distance_Bin) %>%
+  summarise(Events = n())
+
+# Plot the histogram : 800x500
+ggplot(seed_summary, aes(x = Seed_Distance_Bin, y = Events)) +
+  geom_bar(stat = "identity", fill = "mediumorchid4", color = "black") +
+  scale_x_continuous(breaks = seq(0, 440, by = 20), limits = c(0, 440)) +
+  scale_y_continuous(breaks = seq(0, 20, by = 2), limits = c(0, 20)) +
+  theme_minimal() +
+  labs(title = "Seed Dispersal Distance Distribution - Regina",
+       x = "Seed Dispersal Distance (m)",
+       y = "Number of Events") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 
+#################### Plots with four plot data ###########################
+
+###### Seed dispersal 
+
+# Load the 4 filtered datasets
+spr <- read.csv("C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/filtered_data_SPR.csv", sep=";") %>% mutate(Plot = "Sparouine")
+reg <- read.csv("C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/filtered_data_REG.csv", sep=";") %>% mutate(Plot = "Regina")
+nou <- read.csv("C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/filtered_data_NOU.csv", sep=";") %>% mutate(Plot = "Nouragues")
+par <- read.csv("C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/filtered_data_PAR.csv", sep=";") %>% mutate(Plot = "Paracou")
+
+
+# Combine all datasets into one
+all_data <- bind_rows(spr, reg, nou, par)
+
+# Create 10m bins for seed dispersal distances
+all_data <- all_data %>%
+  mutate(Seed_Distance_Bin = floor(Distance_To_Mother / 10) * 10)
+
+mean_seed_distance <- mean(all_data$Distance_To_Mother, na.rm = TRUE)
+
+
+# Summarize the number of events per bin (no plot distinction)
+seed_summary <- all_data %>%
+  group_by(Seed_Distance_Bin) %>%
+  summarise(Events = n(), .groups = "drop")
+
+# Plot: Single global histogram with fixed x-axis (0 to 700m)
+ggplot(seed_summary, aes(x = Seed_Distance_Bin, y = Events)) +
+  geom_bar(stat = "identity", fill = "lightskyblue", color = "black") +
+  geom_vline(xintercept = mean_seed_distance, color = "red", linetype = "dashed", size = 1) +
+  scale_x_continuous(breaks = seq(0, 500, by = 10), limits = c(0, 500)) +
+  scale_y_continuous(breaks = seq(0, 35, by = 5), limits = c(0, 40)) +
+  theme_minimal() +
+  labs(title = "Global Seed Dispersal Distance Distribution",
+       x = "Seed Dispersal Distance (m)",
+       y = "Number of Events") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+
+###### Pollen dispersal 
+
+# Create 10m bins for pollen dispersal distances
+all_data <- all_data %>%
+  mutate(Pollen_Distance_Bin = floor(Distance_To_Father / 10) * 10)
+
+mean_pollen_distance <- mean(all_data$Distance_To_Father, na.rm = TRUE)
+
+
+# Summarize the number of events per bin (no plot distinction)
+pollen_summary <- all_data %>%
+  group_by(Pollen_Distance_Bin) %>%
+  summarise(Events = n(), .groups = "drop")
+
+# Plot
+ggplot(pollen_summary, aes(x = Pollen_Distance_Bin, y = Events)) +
+  geom_bar(stat = "identity", fill = "#DA70D6", color = "black") +
+  geom_vline(xintercept = mean_pollen_distance, color = "red", linetype = "dashed", size = 1) +
+  scale_x_continuous(breaks = seq(0, 700, by = 50), limits = c(0, 700)) +
+  theme_minimal() +
+  labs(title = "Global Pollen Dispersal Distance Distribution (All Plots Combined)",
+       x = "Pollen Dispersal Distance (m)",
+       y = "Number of Events") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 
