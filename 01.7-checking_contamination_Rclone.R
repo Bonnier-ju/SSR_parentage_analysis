@@ -29,6 +29,11 @@ list_all_tab(markers)
 
 MLG_tab(markers, vecpop = NULL)
 
+MLGlist <- MLG_list(markers)
+for (i in seq_along(MLGlist)) {
+  cat("MLG", i, "contains individuals (IDs):", indiv_ids[MLGlist[[i]]], "\n")
+}
+
 # Allelic frequencies per locus
 freq_RR(markers)
 
@@ -57,7 +62,7 @@ pgen(markers)
 # Very low psex values mean the repeated occurrence of a genotype is unlikely by chance alone, suggesting clonal reproduction or contamination
 
 res <- psex(markers, RR = TRUE, nbrepeat = 100)
-
+ 
 
 
 ############ Tests for MLLs occurrence and assessment of their memberships ############
@@ -76,11 +81,11 @@ ressim <- genet_dist_sim(markers, nbrepeat = 100) #theoretical distribution
 ressimWS <- genet_dist_sim(markers, genet = TRUE, nbrepeat = 100) #idem, without selfing
 
 #graph prep.:
-p1 <- hist(respop$distance_matrix, freq = FALSE, col = rgb(0,0.4,1,1), main = "Nouragues",
+p1 <- hist(respop$distance_matrix, freq = FALSE, col = rgb(0,0.4,1,1), main = "Regina",
            xlab = "Genetic distances", breaks = seq(0, max(respop$distance_matrix)+1, 1))
 
 
-p2 <- hist(ressim$distance_matrix, freq = FALSE, col = rgb(0.7,0.9,1,0.5), main = "Nouragues",
+p2 <- hist(ressim$distance_matrix, freq = FALSE, col = rgb(0.7,0.9,1,0.5), main = "Regina",
            xlab = "Genetic distances", breaks = seq(0, max(ressim$distance_matrix)+1, 1))
 
 
@@ -93,8 +98,8 @@ p3 <- hist(ressimWS$distance_matrix, freq = FALSE, col = rgb(0.9,0.5,1,0.3),
 limx <- max(max(respop$distance_matrix), max(ressim$distance_matrix), max(ressimWS$distance_matrix))
 
 # Tracer les histogrammes avec ylim étendu jusqu'à 0.1
-hist(respop$distance_matrix, freq = FALSE, col = "#548B54",
-     main = "Genetic distance distributions - Nouragues",
+hist(respop$distance_matrix, freq = FALSE, col = "mediumorchid4",
+     main = "Genetic distance distributions - Regina",
      xlab = "Genetic distances",
      breaks = seq(0, limx+1, 1), 
      xlim = c(0, 100),
@@ -109,7 +114,7 @@ hist(ressimWS$distance_matrix, freq = FALSE, add = TRUE,
 # Placer manuellement la légende avec des coordonnées pour éviter la superposition :
 legend(x = limx*0.1, y = 0.20,  # Ajuste précisément ces valeurs en fonction du graphique
        legend = c("Observed data", "Simulated data", "Simulated (no selfing)"),
-       fill = c("#548B54", rgb(0.7, 0.9, 1, 0.5), rgb(0.9, 0.5, 1, 0.3)),
+       fill = c("mediumorchid4", rgb(0.7, 0.9, 1, 0.5), rgb(0.9, 0.5, 1, 0.3)),
        bg = "white", box.lwd = 1, cex = 0.8)
 
 # plot 700x600
@@ -121,7 +126,7 @@ table(respop$distance_matrix)
 
 # identify MLLs (Multilocus Lineages)
 # alpha2 = 4 indicates that individuals with ≤ 4 allelic differences are grouped into the same MLL 
-MLLlist <- MLL_generator(markers, alpha2 = 18)
+MLLlist <- MLL_generator(markers, alpha2 = 4)
 
 ###################### Genotypic diversity, richness and evenness indices calculation ################
 
@@ -153,7 +158,7 @@ Pareto_index(markers, full = TRUE, graph = TRUE, legends = 2)
 #################### Saving suspect individuals ###################################
 
 # Generate MLLs using alpha2 = 5
-MLLlist <- MLL_generator(markers, alpha2 = 18)
+MLLlist <- MLL_generator(markers, alpha2 = 5)
 
 # Create an empty vector to store MLL assignments
 MLL_vector <- rep(NA, length(indiv_ids))
@@ -180,7 +185,7 @@ print(suspected_MLLs)
 
 # Export to CSV clearly
 write.csv(suspected_MLLs, 
-          "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/01-Pre-traitements/01.7-checking_contamination_Rclone/suspected_contaminations_Nouragues.csv", 
+          "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/01-Pre-traitements/01.7-checking_contamination_Rclone/suspected_contaminations_Regina.csv", 
           row.names = FALSE)
 
 
