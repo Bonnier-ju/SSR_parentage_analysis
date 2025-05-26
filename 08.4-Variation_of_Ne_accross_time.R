@@ -7,12 +7,13 @@ library(VarEff)
 library(readr)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 
 
 allele_info <- read_csv("C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/08-past_demographic_history/08.4-VarEff/Allele_information.csv")  
-geno <- read_csv("C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/08-past_demographic_history/08.0-filtered_relationship_inds/Paracou/unrelated_PAR_under_0.08.csv")
+geno <- read_csv("C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/08-past_demographic_history/08.0-filtered_relationship_inds/Nouragues/unrelated_NOU_under_0.125.csv")
 out_dir <- "C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/08-past_demographic_history/08.4-VarEff"
-outfile <- file.path(out_dir, "InputVarEff_PAR.txt")
+outfile <- file.path(out_dir, "InputVarEff_NOU.txt")
 
 loci <- geno %>% 
   select(matches("_1$")) %>% 
@@ -95,11 +96,11 @@ message("→ Infile VarEff écrit dans : ", outfile)
 #    — gives Θ₀, Θ₁, Θ₂, imbalance indices, MinNe/MaxNe suggestions :contentReference[oaicite:3]{index=3}
 # ====================================================================================
 # 3.1 Set “quick” MCMC controls for a fast run
-INFILE      <-"C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/08-past_demographic_history/08.4-VarEff/InputVarEff_SPR.txt"
+INFILE      <-"C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/08-past_demographic_history/08.4-VarEff/InputVarEff_NOU.txt"
 NBLOC       <- 66      # number of markers
 MUTAT       <- 0.001             # assumed per‐locus mutation rate
 JMAX        <- 3                 # number of Ne‐change events to model
-MODEL       <- "S"               # Single‐Step mutation model
+MODEL       <- "T 0.15"   # Single‐Step mutation model
 NBAR        <- 1000              # rough prior mean for Θ = 4·Ne·u
 VARP1       <- 3                 # variance of log‐Ne prior
 RHOCORN     <- 0                 # no auto‐correlation in sizes
@@ -107,7 +108,7 @@ GBAR        <- 5000              # max generations back
 VARP2       <- 3                 # variance of log‐time prior
 DMAXPLUS    <- max(diff(sort(unique(allele_info$AlleleLength)))) + 1
 Diagonale   <- 0.5               # covariance smoothing
-NumberBatch <- 1000              # small for speed
+NumberBatch <- 2000              # small for speed
 LengthBatch <- 5
 SpaceBatch  <- 5
 
@@ -162,7 +163,7 @@ result <- VarEff(
   VARP2        = VARP2,
   DMAXPLUS     = DMAXPLUS,
   Diagonale    = Diagonale,
-  NumberBatch  = 10000,        # full‐scale MCMC
+  NumberBatch  = 20000,        # full‐scale MCMC
   LengthBatch  = 10,
   SpaceBatch   = 10
 )
@@ -171,26 +172,61 @@ message("✔ Full VarEff run complete; output prefix ‘final_job’")
 # ====================================================================================
 # 6. Post‐processing: Ne through time
 # ====================================================================================
-# 6.1 Summary statistics at 10 time‐points up to 200 generations ago
+#Summary statistics at 20 time‐points up to 1000 generations ago
 NatSizeDist(
   NameBATCH = "final_job.Batch",
   MUTAT     = MUTAT,
-  TMAX      = 200,
-  NBT       = 10
+  TMAX      = 1000,
+  NBT       = 20
 )
 
-# 6.2 2D contour plot of log‐Ne through time
+#2D contour plot of log‐Ne through time
 NTdist(
   NameBATCH = "final_job.Batch",
   MUTAT     = MUTAT,
   TMAX      = 200
 )
 
-# 6.3 Detailed density plots at a few time‐points
+#Detailed density plots at a few time‐points
 plotNdistrib(
   infile  = "final_job.Ndist",
   nbcases = 5
 )
+
+
+
+# Read the Nstat file and assign column names
+nstat <- read.table(
+  "C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/R_scripts/SSR_parentage_analysis/final_job.Nstat",
+  header = FALSE
+)
+colnames(nstat) <- c(
+  "Time",
+  "Mean.Arithmetic",
+  "Mean.Harmonic",
+  "Mode",
+  "Median",
+  "Quantile5",
+  "Quantile95"
+)
+
+# Plot Median ± 90% CI over time
+ggplot(nstat, aes(x = Time, y = Mode)) +
+  # ribbon for the 5–95% credible interval
+  geom_ribbon(aes(ymin = Quantile5, ymax = Quantile95), alpha = 0.2) +
+  # median line
+  geom_line(size = 1, color="chocolate3") +
+  # optionally add mean or mode
+  # geom_line(aes(y = Mean.Arithmetic), linetype="dashed") +
+  labs(
+    x = "Time in the past (generations)",
+    y = expression(italic(N[e])~"(effective size)"),
+    title = "Estimated Ne through time  - Paracou"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
 
 
 
