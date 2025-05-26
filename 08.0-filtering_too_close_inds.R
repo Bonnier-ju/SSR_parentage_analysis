@@ -12,7 +12,9 @@ library(mlogit)
 library(Demerelate)
 
 # File path
-data <- read.csv("C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/08-past_demographic_history/08.0-filtered_relationship_inds/Sparouine/Sparouine_full_adl.csv")
+data <- read.csv("C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/08-past_demographic_history/08.0-filtered_relationship_inds/Sparouine/Sparouine_data.csv")
+output_path_dir <- "C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/08-past_demographic_history/08.0-filtered_relationship_inds/Sparouine"
+
 data_f <- as.data.frame(data)
 
 # Compute pairwise relatedness using Wang estimator
@@ -77,6 +79,5 @@ cat("Number of unrelated individuals retained:", length(indep_ids), "\n")
 final_data <- data_f[data_f[[1]] %in% indep_ids, ]
 
 #Export to a new CSV file
-write.csv(final_data,
-          paste0("unrelated_individuals_under_", seuil_relatedness, ".csv"),
-          row.names = FALSE)
+output_file <- file.path(output_path_dir, paste0("unrelated_SPR_under_", seuil_relatedness, ".csv"))
+write.csv(final_data, output_file, row.names = FALSE)
