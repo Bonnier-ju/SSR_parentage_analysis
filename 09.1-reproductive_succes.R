@@ -12,7 +12,7 @@ library(stringr)
 library(tidyr)
 
 
-plot_name <- "Nouragues"
+plot_name <- "Regina"
 
 # Define color mapping
 plot_colors <- c(
@@ -24,7 +24,7 @@ plot_colors <- c(
 plot_color <- plot_colors[[plot_name]]
 
 # file path 
-file_path <- "C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/05-Parentage_analysis/05.4-parentage_with_colony/Nouragues/Results_Nouragues/Nouragues_colony.BestCluster.csv"
+file_path <- "C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/05-Parentage_analysis/05.4-parentage_with_colony/Regina/Results_Regina/Regina_colony.BestCluster.csv"
 output_dir <- "C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/09-reproductive_sucess/by_clusters"
 
 # Read the file
