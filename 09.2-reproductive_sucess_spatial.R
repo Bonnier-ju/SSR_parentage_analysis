@@ -9,7 +9,7 @@ library(readr)
 
 
 # Define plot
-plot_name <- "Nouragues"
+plot_name <- "Paracou"
 
 # Define color per plot
 plot_colors <- c(
@@ -21,8 +21,8 @@ plot_colors <- c(
 plot_color <- plot_colors[[plot_name]]
 
 # Define input/output paths
-input_csv <- "C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/filtered_data_NOU.csv"
-isolines_path <- "C:/Users/bonni/Desktop/Fichiers_cartes_Qgis/Isolignes/Isolignes_Nouragues_5m/Isolignes_Nouragues_5m_WGS84_reprojected.shp"
+input_csv <- "C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/05-Parentage_analysis/05.6-parentage_with_haplotype/filtered_data_PAR.csv"
+isolines_path <- "C:/Users/bonni/Desktop/Fichiers_cartes_Qgis/Isolignes/Isolignes_Paracou_5m/Isolignes_Paracou_5m.shp"
 output_dir <- "C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/09-reproductive_sucess/spatial_link_with_repro"
 output_file <- file.path(output_dir, paste0("map_reproductive_success_", plot_name, ".png"))
 
@@ -99,7 +99,7 @@ coords <- st_coordinates(parent_sf_proj)
 nb <- dnearneigh(coords, d1 = 0, d2 = 100)
 
 # Convert to spatial weights (row-standardized)
-lw <- nb2listw(nb, style = "W")
+lw <- nb2listw(nb, style = "W", zero.policy = TRUE)
 
 # Compute local G-statistics (Getis-Ord Gi*)
 gi_star <- localG(parent_sf_proj$Offspring_Count, listw = lw)
