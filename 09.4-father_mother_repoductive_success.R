@@ -9,7 +9,7 @@ library(stringr)
 library(tools)
 library(tidyr)
 
-plot_code <- "SPR"  
+plot_code <- "REG"  
 
 # Automatic variables from that
 plot_names <- c("NOU" = "Nouragues", "PAR" = "Paracou", "SPR" = "Sparouine", "REG" = "Regina")
@@ -87,6 +87,7 @@ hist_ratio <- ggplot(repro_summary, aes(x = log10(Role_Bias))) +
     x = "log10(N_Mother + 1 / N_Father + 1)", y = "Number of Parents"
   ) +
   theme_minimal()
+hist_ratio
 
 ggsave(file.path(output_dir, paste0("role_bias_log_histogram_", plot_name, ".png")),
        plot = hist_ratio, width = 8, height = 6, dpi = 400, bg = "white")
@@ -121,7 +122,8 @@ dbh_boxplot <- ggplot(dbh_combined, aes(x = Role, y = DBH, fill = Role)) +
   labs(title = paste0("DBH of Parents by Role – ", plot_name),
        x = "Reproductive Role", y = "DBH (cm)") +
   theme_minimal()
-dbh_boxplot 
+dbh_boxplot
+
 # Save boxplot
 ggsave(file.path(output_dir, paste0("dbh_comparison_by_role_", plot_name, ".png")),
        plot = dbh_boxplot, width = 8, height = 6, dpi = 400, bg = "white")
@@ -146,6 +148,7 @@ dbh_scatter <- ggplot(dbh_success, aes(x = DBH, y = N, color = Role)) +
   labs(title = paste0("Reproductive Success vs. DBH – ", plot_name),
        x = "DBH (cm)", y = "Number of Offspring") +
   theme_minimal()
+dbh_scatter
 
 # Save scatterplot
 ggsave(file.path(output_dir, paste0("scatter_repro_vs_dbh_", plot_name, ".png")),
