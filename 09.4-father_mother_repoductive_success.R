@@ -9,7 +9,7 @@ library(stringr)
 library(tools)
 library(tidyr)
 
-plot_code <- "REG"  
+plot_code <- "SPR"  
 
 # Automatic variables from that
 plot_names <- c("NOU" = "Nouragues", "PAR" = "Paracou", "SPR" = "Sparouine", "REG" = "Regina")
