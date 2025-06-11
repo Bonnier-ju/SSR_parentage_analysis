@@ -99,91 +99,119 @@ ggplot() +
 
 
 
+################# Map of family clusters with isolines #####################
+############################################################################
 
-
-################# Map of family clusters #####################
-##############################################################
-
-# Charger les biblioth?ques
 library(ggplot2)
 library(dplyr)
+library(sf)
 
-file_path_1 <- "C:/Users/bonni/OneDrive/Universit?/Th?se/Dicorynia/Article - SSR Populations/Analysis/05-Parentage_analysis/05.4-parentage_with_colony/Regina/Results_Regina/Regina_colony.BestCluster.csv"
+# Load input files
+file_path_1 <- "C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/05-Parentage_analysis/05.4-parentage_with_colony/Paracou/Results_Paracou/Paracou_Colony.BestCluster.csv"
+file_path_2 <- "C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Data_initial/Paracou/Paracou_full_data.csv"
+isolines_path <- "C:/Users/bonni/Desktop/Fichiers_cartes_Qgis/Isolignes/Isolignes_Paracou_5m/Isolignes_Paracou_5m.shp"
+
 best_cluster <- read.csv(file_path_1, header = TRUE, stringsAsFactors = FALSE)
-head(best_cluster)
-
-file_path_2 <- "C:/Users/bonni/OneDrive/Universit?/Th?se/Dicorynia/Article - SSR Populations/Data_initial/Regina/Regina_tree_info.csv"
 tree_info <- read.csv(file_path_2, header = TRUE, stringsAsFactors = FALSE)
 
-# Remplacer les "#" par NA dans FatherID et MotherID
+# Replace "#" with NA in parent columns
 best_cluster$FatherID <- gsub("^#", NA, best_cluster$FatherID)
 best_cluster$MotherID <- gsub("^#", NA, best_cluster$MotherID)
 
-# Filtrer les clusters ayant au moins 10 individus
+# Keep only clusters with ≥5 offspring
 cluster_sizes <- best_cluster %>%
   group_by(ClusterIndex) %>%
-  summarize(total_count = n())
+  summarise(total_count = n())
 
 valid_clusters <- cluster_sizes %>%
-  filter(total_count >= 10) %>%
+  filter(total_count >= 5) %>%
   pull(ClusterIndex)
 
 filtered_best_cluster <- best_cluster %>%
   filter(ClusterIndex %in% valid_clusters)
 
-# Fusionner les donn?es pour ajouter les coordonn?es des OffspringID
+# Merge offspring coordinates
 offspring_positions <- filtered_best_cluster %>%
   left_join(tree_info, by = c("OffspringID" = "ID"))
 
-# Ajouter les coordonn?es des FatherID
+# Merge father and mother coordinates
 father_positions <- filtered_best_cluster %>%
   left_join(tree_info, by = c("FatherID" = "ID")) %>%
   rename(FatherLat = lat, FatherLong = long)
 
-# Ajouter les coordonn?es des MotherID
 mother_positions <- filtered_best_cluster %>%
   left_join(tree_info, by = c("MotherID" = "ID")) %>%
   rename(MotherLat = lat, MotherLong = long)
 
-# Combiner les coordonn?es dans un seul tableau
+# Combine all
 cluster_data <- offspring_positions %>%
   bind_cols(father_positions %>% select(FatherLat, FatherLong)) %>%
   bind_cols(mother_positions %>% select(MotherLat, MotherLong))
 
-# Cr?er une carte avec ggplot2
+# Color palette per cluster (custom)
+cluster_colors <- c(
+  "1" = "#FF4040", "2" = "#458B74", "3" = "#aed6f1", "4" = "#8B7355", "5" = "#458B00",
+  "6" = "chocolate1", "7" = "#00FFFF", "8" = "#EEAD0E", "9" = "#FFF8DC", "10" = "#008B8B",
+  "11" = "#A2CD5A", "12" = "#BF3EFF", "13" = "darkseagreen1", "14" = "#8B2323", "15" = "#FF1493",
+  "16" = "#00BFFF", "17" = "#7FFFD4", "18" = "#7FFF00", "19" = "#FFD700", "20" = "#8B0A50",
+  "21" = "#68228B", "22" = "#FF69B4", "23" = "#8B2500", "24" = "#8B8B00"
+)
+
+# Ensure ClusterIndex is a factor for coloring
+cluster_data$ClusterIndex <- as.factor(cluster_data$ClusterIndex)
+
+# ----- Load and crop isolines to sampling area -----
+isolines <- st_read(isolines_path, quiet = TRUE)
+isolines_wgs84 <- st_transform(isolines, crs = 4326)
+
+# Create spatial bounding box around tree locations
+bbox_sf <- st_as_sf(cluster_data, coords = c("long", "lat"), crs = 4326)
+bbox_expanded <- st_bbox(bbox_sf) %>%
+  st_as_sfc() %>%
+  st_transform(st_crs(isolines_wgs84)) %>%
+  st_buffer(0.001)  # ~100 m buffer
+
+# Crop isolines
+isolines_crop <- st_intersection(isolines_wgs84, bbox_expanded)
+
+# ----- Plot -----
 ggplot() +
-  # Ajouter les liens p?re-descendant (sans l?gende)
+  # Topographic lines
+  geom_sf(data = isolines_crop, color = "grey60", size = 0.3, alpha = 0.7) +
+  
+  # Parent-offspring links
   geom_segment(data = cluster_data %>% filter(!is.na(FatherLat)),
-               aes(x = long, y = lat, xend = FatherLong, yend = FatherLat, color = factor(ClusterIndex)),
+               aes(x = long, y = lat, xend = FatherLong, yend = FatherLat, color = ClusterIndex),
                alpha = 0.6, size = 0.8, show.legend = FALSE) +
-  
-  # Ajouter les liens m?re-descendant (sans l?gende)
   geom_segment(data = cluster_data %>% filter(!is.na(MotherLat)),
-               aes(x = long, y = lat, xend = MotherLong, yend = MotherLat, color = factor(ClusterIndex)),
+               aes(x = long, y = lat, xend = MotherLong, yend = MotherLat, color = ClusterIndex),
                alpha = 0.6, size = 0.8, show.legend = FALSE) +
   
-  # Ajouter les descendants (losanges remplis de leur couleur de cluster)
+  # Offspring (diamonds)
   geom_point(data = cluster_data,
-             aes(x = long, y = lat, fill = factor(ClusterIndex)),
+             aes(x = long, y = lat, fill = ClusterIndex),
              shape = 23, size = 3, color = "black") +
   
-  # Ajouter les p?res (triangles remplis de leur couleur de cluster)
+  # Fathers (triangles)
   geom_point(data = cluster_data %>% filter(!is.na(FatherLat)),
-             aes(x = FatherLong, y = FatherLat, fill = factor(ClusterIndex)),
+             aes(x = FatherLong, y = FatherLat, fill = ClusterIndex),
              shape = 24, size = 3, color = "black") +
   
-  # Ajouter les m?res (triangles remplis de leur couleur de cluster)
+  # Mothers (triangles)
   geom_point(data = cluster_data %>% filter(!is.na(MotherLat)),
-             aes(x = MotherLong, y = MotherLat, fill = factor(ClusterIndex)),
+             aes(x = MotherLong, y = MotherLat, fill = ClusterIndex),
              shape = 24, size = 3, color = "black") +
   
-  # Personnalisation des couleurs et axes
-  scale_fill_manual(values = scales::hue_pal()(length(unique(cluster_data$ClusterIndex)))) +
-  scale_color_manual(values = scales::hue_pal()(length(unique(cluster_data$ClusterIndex)))) +
-  labs(title = "Clusters of relations Parent-Offspring (Regina)",
-       x = "Longitude", y = "Latitude", fill = "Cluster") +  # L?gende uniquement pour les points
+  # Color scale
+  scale_fill_manual(values = cluster_colors) +
+  scale_color_manual(values = cluster_colors) +
+  
+  labs(title = "Clusters of Parent-Offspring Relations (Paracou)",
+       x = "Longitude", y = "Latitude", fill = "Cluster") +
   theme_minimal() +
   theme(legend.position = "right")
+
+
 
 
 
