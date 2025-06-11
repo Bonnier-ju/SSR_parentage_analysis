@@ -1,7 +1,7 @@
 ############ Map of parent offspring relationship ############
 ##############################################################
 
-# Charger les biblioth?ques
+
 library(ggplot2)
 library(dplyr)
 library(stringr)
