@@ -1,24 +1,28 @@
 
 #################### Visualization of Fij by distance class ###################
-
+ 
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
 
 
 ### Files parameters ###
-site_id <- "NOU"         
-site_title <- "Nouragues"   
-suffix <- "FULL"         
-line_color <- "#548B54"
+site_id <- "REG"         
+site_title <- "Regina"   
+suffix <- "ADL"         
+line_color <- "mediumorchid4"
 
-base_path <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - SSR Populations/Analysis/04-diversity_dist_class_per_sites/Fij_graphs"
+base_path <- "C:/Users/bonni/OneDrive/University/Thesis/Dicorynia/Article-SSR_population/Analysis/04-diversity_dist_class_per_sites/input_Fij_graphs"
 
-input_file <- file.path(base_path, "Table_results_csv", paste0("Fij_", site_id, "_", suffix, ".csv"))
-output_file <- file.path(base_path, "Graph_V2", paste0("Fij_", site_id, "_", suffix, ".png"))
+
+input_file <- file.path(base_path, paste0("Fij_", site_id, "_", suffix, ".csv"))
+output_file <- file.path(base_path, paste0("Fij_", site_id, "_", suffix, ".png"))
+
+#input_file <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - Logging impact/Analysis/03-diversity_and_SGS_analysis/Fij_HKO50_FULL.csv"
+#output_file <- "C:/Users/bonni/OneDrive/Université/Thèse/Dicorynia/Article - Logging impact/Analysis/03-diversity_and_SGS_analysis/PAI74_fij_graphs.png"
 
 ### Import data ###
-df <- read.csv(input_file, sep = ";", header = FALSE)
+df <- read.csv(input_file, sep = ",", header = FALSE)
 
 b_log <- round(as.numeric(df[6, 14]), 4)
 distance_classes <- c("0", "30", "60", "90", "130", "170", "220", "300", "600")
@@ -58,23 +62,23 @@ plot <- ggplot() +
     breaks = kinship_df$x_plot,
     labels = kinship_df$distance_class
   ) +
-  coord_cartesian(ylim = c(-0.04, 0.04)) +
+  coord_cartesian(ylim = c(-0.08, 0.08)) +
   geom_text(
     aes(x = Inf, y = Inf, label = paste0("b-log = ", b_log)),
-    hjust = 1.5, vjust = 3, size = 4
+    hjust = 1.5, vjust = 3, size = 6
   ) +
   labs(
-    title = site_title,
+    title = paste(site_title, "-", suffix),
     x = "Distance class (m)",
     y = "Kinship coefficient"
   ) +
   theme_minimal() +
   theme(
     plot.title   = element_text(size = 15, face = "bold", hjust = 0.5),
-    axis.title.x = element_text(size = 13),
-    axis.title.y = element_text(size = 13),
-    axis.text.x  = element_text(size = 12),
-    axis.text.y  = element_text(size = 12)
+    axis.title.x = element_text(size = 15),
+    axis.title.y = element_text(size = 15),
+    axis.text.x  = element_text(size = 15),
+    axis.text.y  = element_text(size = 15)
   )
 
 print(plot)
@@ -88,3 +92,4 @@ ggsave(
   dpi = 300,
   bg = "white"
 )
+
